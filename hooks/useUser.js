@@ -12,6 +12,7 @@ async function register(token) {
     if (token) {
         const raw = {
             "login": "testNalog",
+            "email": "testNalog@gmail.com",
             "password": "123",
             "confirmPassword": "123",
             "rememberMe": true,

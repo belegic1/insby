@@ -4,6 +4,8 @@ import styles from '../styles/Login.module.css'
 import { useState, useContext } from "react"
 import { useRouter } from 'next/router'
 import { useRegisterUser, useUser } from '../hooks/useUser'
+import { useMutation, useQueryClient } from "react-query";
+
 
 const Login = () => {
 
@@ -17,63 +19,60 @@ const Login = () => {
   const [errMsg, setErrMsg] = useState(null)
 
   const token = useToken()
-  const { mutate } = useRegisterUser()
+  // const { mutate } = useRegisterUser()
 
-  // function register() {
-    
-  //   if (token) {
+  async function register() {
+    if (token) {
+      const raw = {
+        "login": username,
+        "email": email,
+        "password": password,
+        "confirmPassword": confirmPassword,
+        "rememberMe": true,
+        "autoRegister": true,
+        "admin": false
+      }
+      const requestOptions = {
+        method: 'POST',
 
-  //     if (password !== confirmPassword) {
-  //       setErrMsg("Passwords don't match, try again!")
-  //       return
-      
-  //     }
-  //     const raw = {
-  //       "login": username,
-  //       email,
-  //       password,
-  //       confirmPassword,
-  //       "rememberMe": rememberme,
-  //       "autoRegister": true,
-  //       "admin": false
-  //     }
-      
-  //     const requestOptions = {
-  //       method: 'POST',
+        body: JSON.stringify(raw),
+        redirect: 'follow',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      };
 
-  //       body: JSON.stringify(raw),
-  //       redirect: 'follow',
-  //       headers: {
-  //         "Authorization": `Bearer ${token}`,
-  //         'Content-Type': 'application/json'
-  //       },
-  //     };
+      try {
+        const response = await fetch("https://dev-mrp.insby.tech/api/session/sign-in", requestOptions);
+        const result_1 = await response.json();
+        return result_1;
+      } catch (error) {
+        return console.log('error', error);
+      }
+    }
+  }
 
-  //     fetch("https://dev-mrp.insby.tech/api/session/sign-in", requestOptions)
-  //       .then(response => response.json())
-  //       .then(result => 
-  //        setUser(result)
-          
-  //       )
-  //       .catch(error => console.log('error', error));
-  //   }
-  // }
+  const { mutate } = useMutation(register);
 
-  
+
+  const queryClient = useQueryClient()
 
   const handleSubmit = e => {
     e.preventDefault()
-    const data = {
-      "login": username,
-      email,
-      password,
-      confirmPassword,
-      "rememberMe": rememberme,
-      "autoRegister": true,
-      "admin": false
-    }
-    mutate(token, data)
-    router.push("/")
+  
+
+    mutate(register, {
+      onSuccess: data => {
+        queryClient.setQueryData("user", (oldData) => {
+          return data.data
+        })
+      }
+    })
+   
+    setTimeout(() => {
+      router.push("/")
+    }, 500);
   }
 
 
@@ -99,8 +98,8 @@ const Login = () => {
                       <label value={rememberme} onChange={e => setRememberme(e.target.checked)} className={styles.label} htmlFor="rememberme">Remember me</label>
           </div>
           
-          <button disabled className={styles.input}>{errMsg ? errMsg : 'SignUp/Login'}</button>
-          <button className={styles.input} type="button" onClick={sumbitIt}>Test credentials register</button>
+          <button  className={styles.input}>{errMsg ? errMsg : 'SignUp/Login'}</button>
+          <button disabled className={styles.input} type="button" onClick={sumbitIt}>Test credentials register</button>
 
              </div>
           </form>
